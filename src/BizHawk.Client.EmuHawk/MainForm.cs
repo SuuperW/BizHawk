@@ -3320,6 +3320,11 @@ namespace BizHawk.Client.EmuHawk
 		}
 
 		/// <summary>
+		/// Start A/V recording using the last used settings, unattended.
+		/// </summary>
+		public void StartAv(string filename) => RecordAvBase(null, filename, true);
+
+		/// <summary>
 		/// start AV recording, asking user for filename and options
 		/// </summary>
 		private void RecordAv()
@@ -3507,7 +3512,7 @@ namespace BizHawk.Client.EmuHawk
 			RewireSound();
 		}
 
-		private void StopAv()
+		public void StopAv()
 		{
 			if (_currAviWriter == null)
 			{

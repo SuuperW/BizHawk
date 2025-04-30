@@ -96,8 +96,12 @@ namespace BizHawk.Client.Common
 
 		void SeekFrameAdvance();
 
+		void StartAv(string path);
+
 		/// <remarks>only referenced from <c>EmuClientApi</c></remarks>
 		void StepRunLoop_Throttle();
+
+		void StopAv();
 
 		/// <remarks>only referenced from <see cref="MovieApi"/></remarks>
 		void StopMovie(bool saveChanges = true);

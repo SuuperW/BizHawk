@@ -148,6 +148,10 @@ namespace BizHawk.Client.Common
 
 		void SpeedMode(int percent);
 
+		void StartAv(string path);
+
+		void StopAv();
+
 		void TogglePause();
 
 		Point TransformPoint(Point point);

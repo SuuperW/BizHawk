@@ -212,6 +212,10 @@ namespace BizHawk.Client.Common
 			else _logCallback("Invalid speed value");
 		}
 
+		public void StartAv(string path) => _mainForm.StartAv(path);
+
+		public void StopAv() => _mainForm.StopAv();
+
 		public void TogglePause() => _mainForm.TogglePause();
 
 		public Point TransformPoint(Point point) => _displayManager.TransformPoint(point);

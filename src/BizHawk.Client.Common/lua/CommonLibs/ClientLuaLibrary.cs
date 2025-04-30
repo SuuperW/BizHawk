@@ -245,6 +245,16 @@ namespace BizHawk.Client.Common
 		public void PauseAv()
 			=> APIs.EmuClient.PauseAv();
 
+		[LuaMethodExample("client.start_av(path);")]
+		[LuaMethod("start_av", "Start capturing audio/video, using the most recently used settings and the given file name.")]
+		public void StartAv(string path)
+			=> APIs.EmuClient.StartAv(path);
+
+		[LuaMethodExample("client.end_av();")]
+		[LuaMethod("end_av", "Stop capturing audio/video.")]
+		public void StopAv()
+			=> APIs.EmuClient.StopAv();
+
 		[LuaMethodExample("client.reboot_core( );")]
 		[LuaMethod("reboot_core", "Reboots the currently loaded core")]
 		public void RebootCore()

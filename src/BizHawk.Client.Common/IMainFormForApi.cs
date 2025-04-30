@@ -112,8 +112,12 @@ namespace BizHawk.Client.Common
 		/// <remarks>referenced from <see cref="EmuClientApi"/> and <see cref="SaveStateApi"/></remarks>
 		FileWriteResult SaveState(string path, string userFriendlyStateName, bool suppressOSD = false);
 
+		void StartAv(string path);
+
 		/// <remarks>only referenced from <see cref="EmuClientApi"/></remarks>
 		void StepRunLoop_Throttle();
+
+		void StopAv();
 
 		/// <remarks>only referenced from <see cref="MovieApi"/></remarks>
 		void StopMovie(bool saveChanges = true);

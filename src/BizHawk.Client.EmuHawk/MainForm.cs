@@ -915,8 +915,7 @@ namespace BizHawk.Client.EmuHawk
 			{
 				Input.Instance.Update();
 
-				// handle events and dispatch as a hotkey action, or a hotkey button, or an input button
-				// ...but prepare haptics first, those get read in ProcessInput
+				// prepare haptics first, those get read in ProcessInput
 				var finalHostController = InputManager.ControllerInputCoalescer;
 				InputManager.ActiveController.PrepareHapticsForHost(finalHostController);
 				Input.Instance.Adapter.SetHaptics(finalHostController.GetHapticsSnapshot());
@@ -960,6 +959,17 @@ namespace BizHawk.Client.EmuHawk
 				}
 
 				InputManager.RunControllerChain(Config);
+
+				// Repeatable hotkeys happen here. Putting them in InputManager would be
+				// a bit awkward, due to dependencies:
+				// 1) Doing repeat hotkeys depends on updating the hotkey output controller.
+				// 2) Updating the hotkey output controller depends on initial hotkey triggers.
+				// That means we'd have hotkey actions in both ProcessInput and RunControllerChain.
+				// Those two methods cannot be combined becuase
+				// 3) Mouse transformations (a client concern the InputManager cannot see) depends on updating the input controller.
+				// 4) Updating the input controller depends on initial hotkey triggers.
+				_repeatableEventAdapter.Update();
+				_repeatableEventAdapter.ProcessEvents((s) => _ = CheckHotkey(s));
 
 				// emu.yield()'ing scripts
 				if (Tools.Has<LuaConsole>())
@@ -1179,6 +1189,8 @@ namespace BizHawk.Client.EmuHawk
 		public event StateSavedEventHandler SavestateSaved;
 
 		private readonly InputManager InputManager;
+
+		private RepeatableEventAdapter _repeatableEventAdapter;
 
 		private IVideoProvider _currentVideoProvider = NullVideo.Instance;
 
@@ -2104,6 +2116,22 @@ namespace BizHawk.Client.EmuHawk
 			foreach (var (k, v) in Config.HotkeyBindings) controls.BindMulti(k, v);
 
 			InputManager.ClientControls = controls;
+			_repeatableEventAdapter = new RepeatableEventAdapter(
+				controls,
+				[
+					// "Frame Advance", "Rewind", TODO: These will require extra logic.
+					"Volume Up", "Volume Down",
+					"Increase Speed", "Decrease Speed",
+					"Undo", "Redo",
+					"Analog Increment", "Analog Decrement",
+					"Analog Incr. by 10", "Analog Decr. by 10",
+					"Y Up Small", "Y Up Large",
+					"Y Down Small", "Y Down Large",
+					"X Up Small", "X Up Large",
+					"X Down Small", "X Down Large",
+				],
+				250 + 250 * SystemInformation.KeyboardDelay,
+				30 + 12 * (31 - SystemInformation.KeyboardSpeed));
 			InputManager.ControllerInputCoalescer = new();
 		}
 

@@ -1080,8 +1080,7 @@ namespace BizHawk.Client.EmuHawk
 		public bool PauseAvi { get; set; }
 		public bool PressFrameAdvance { get; set; }
 		public bool FrameInch { get; set; }
-		public bool HoldFrameAdvance { get; set; } // necessary for tastudio > button
-		public bool PressRewind { get; set; } // necessary for tastudio < button
+		public bool PressRewind { get; set; }
 		public bool FastForward { get; set; }
 
 		/// <summary>
@@ -1687,15 +1686,13 @@ namespace BizHawk.Client.EmuHawk
 		private bool _windowClosedAndSafeToExitProcess;
 		private int _exitCode;
 		private bool _exitRequestPending;
-		private bool _runloopFrameProgress;
-		private long _frameAdvanceTimestamp;
-		private long _frameRewindTimestamp;
-		private bool _frameRewindWasPaused;
-		private bool _runloopFrameAdvance;
+		private bool _continuousFrameAdvance;
+		private bool _wasFrameAdvancing;
 		private bool _wasRewinding;
 		private bool _lastFastForwardingOrRewinding;
 		private bool _inResizeLoop;
 		private bool _throttleCommplete;
+		private bool _isRewinding;
 
 		private readonly double _fpsUpdatesPerSecond = 4.0;
 		private readonly double _fpsSmoothing = 8.0;
@@ -2120,7 +2117,7 @@ namespace BizHawk.Client.EmuHawk
 			_repeatableEventAdapter = new RepeatableEventAdapter(
 				controls,
 				[
-					// "Frame Advance", "Rewind", TODO: These will require extra logic.
+					"Frame Advance", "Rewind",
 					"Volume Up", "Volume Down",
 					"Increase Speed", "Decrease Speed",
 					"Undo", "Redo",
@@ -2203,18 +2200,18 @@ namespace BizHawk.Client.EmuHawk
 			// skips outputting the audio. There's also a third way which is when no throttle
 			// method is selected, but the clock throttle determines that by itself and
 			// everything appears normal here.
-			var rewind = Rewinder?.Active == true && (InputManager.ClientControls["Rewind"] || PressRewind);
 			var fastForward = InputManager.ClientControls["Fast Forward"] || FastForward;
 			var turbo = IsTurboing;
 
 			int speedPercent = fastForward ? Config.SpeedPercentAlternate : Config.SpeedPercent;
 
-			if (rewind)
+			if (_isRewinding && Rewinder?.Active == true)
 			{
+				// Minimum rewind speed. Only applies outside of TAStudio.
 				speedPercent = Math.Max(speedPercent / Rewinder.RewindFrequency, 5);
 			}
 
-			DisableSecondaryThrottling = Config.Unthrottled || turbo || fastForward || rewind;
+			DisableSecondaryThrottling = Config.Unthrottled || turbo || fastForward || _isRewinding;
 
 			// realtime throttle is never going to be so exact that using a double here is wrong
 			_throttle.SetCoreFps(Emulator.VsyncRate());
@@ -2222,7 +2219,7 @@ namespace BizHawk.Client.EmuHawk
 			_throttle.signal_unthrottle = Config.Unthrottled || turbo;
 
 			// zero 26-mar-2016 - vsync and vsync throttle here both is odd, but see comments elsewhere about triple buffering
-			_throttle.signal_overrideSecondaryThrottle = (fastForward || rewind) && (Config.SoundThrottle || Config.VSyncThrottle || Config.VSync);
+			_throttle.signal_overrideSecondaryThrottle = (fastForward || _isRewinding) && (Config.SoundThrottle || Config.VSyncThrottle || Config.VSync);
 			_throttle.SetSpeedPercent(speedPercent);
 		}
 
@@ -2932,8 +2929,7 @@ namespace BizHawk.Client.EmuHawk
 		/*internal*/public void StepRunLoop_Throttle()
 		{
 			SyncThrottle();
-			_throttle.signal_frameAdvance = _runloopFrameAdvance;
-			_throttle.signal_continuousFrameAdvancing = _runloopFrameProgress;
+			_throttle.signal_continuousFrameAdvancing = _continuousFrameAdvance;
 
 			_throttleCommplete = _throttle.Step(Config, Sound, allowSleep: true, forceFrameSkip: -1);
 		}
@@ -2961,9 +2957,6 @@ namespace BizHawk.Client.EmuHawk
 			var runFrame = false;
 			var currentTimestamp = Stopwatch.GetTimestamp();
 
-			double frameAdvanceTimestampDeltaMs = (double)(currentTimestamp - _frameAdvanceTimestamp) / Stopwatch.Frequency * 1000.0;
-			bool frameProgressTimeElapsed = frameAdvanceTimestampDeltaMs >= Config.FrameProgressDelayMs;
-
 			// TODO technically this should only force run frames if the frame advance key has been used
 			if (Config.SkipLagFrame && Emulator.CanPollInput() && Emulator.AsInputPollable().IsLagFrame && Emulator.Frame > 0)
 			{
@@ -2972,7 +2965,8 @@ namespace BizHawk.Client.EmuHawk
 
 			RA?.Update();
 
-			bool frameAdvance = InputManager.ClientControls["Frame Advance"] || PressFrameAdvance || HoldFrameAdvance;
+			_continuousFrameAdvance = false;
+			bool frameAdvance = PressFrameAdvance;
 			if (FrameInch)
 			{
 				FrameInch = false;
@@ -2988,31 +2982,16 @@ namespace BizHawk.Client.EmuHawk
 
 			if (frameAdvance)
 			{
-				if (!_runloopFrameAdvance)
+				runFrame = true;
+				PauseEmulator();
+
+				if (_wasFrameAdvancing)
 				{
-					// handle the initial trigger of a frame advance
-					runFrame = true;
-					_frameAdvanceTimestamp = currentTimestamp;
-					PauseEmulator();
+					_continuousFrameAdvance = true;
 				}
-				else if (frameProgressTimeElapsed)
-				{
-					runFrame = true;
-					_runloopFrameProgress = true;
-					UnpauseEmulator();
-				}
-			}
-			else
-			{
-				if (_runloopFrameAdvance)
-				{
-					// handle release of frame advance
-					PauseEmulator();
-				}
-				_runloopFrameProgress = false;
 			}
 
-			_runloopFrameAdvance = frameAdvance;
+			_wasFrameAdvancing = InputManager.ClientControls["Frame Advance"];
 
 #if BIZHAWKBUILD_SUPERHAWK
 			if (!EmulatorPaused && (!Config.SuperHawkThrottle || InputManager.ClientControls.AnyInputHeld))
@@ -3023,8 +3002,7 @@ namespace BizHawk.Client.EmuHawk
 				runFrame |= _throttleCommplete;
 			}
 
-			bool isRewinding = Rewind(ref runFrame, currentTimestamp, out var returnToRecording);
-			_runloopFrameProgress |= isRewinding;
+			_isRewinding = Rewind(ref runFrame, out var returnToRecording);
 
 			float atten = 0;
 
@@ -3032,7 +3010,7 @@ namespace BizHawk.Client.EmuHawk
 			if ((runFrame || force) && !BlockFrameAdvance)
 			{
 				var isFastForwarding = IsFastForwarding;
-				var isFastForwardingOrRewinding = isFastForwarding || isRewinding || Config.Unthrottled;
+				var isFastForwardingOrRewinding = isFastForwarding || _isRewinding || Config.Unthrottled;
 
 				if (isFastForwardingOrRewinding != _lastFastForwardingOrRewinding)
 				{
@@ -3061,7 +3039,7 @@ namespace BizHawk.Client.EmuHawk
 
 				if (!InvisibleEmulation)
 				{
-					CaptureRewind(isRewinding);
+					CaptureRewind(_isRewinding);
 				}
 
 				// Set volume, if enabled
@@ -3082,7 +3060,7 @@ namespace BizHawk.Client.EmuHawk
 					}
 
 					// Mute if using Frame Advance/Frame Progress
-					if (_runloopFrameAdvance && Config.MuteFrameAdvance)
+					if (frameAdvance && Config.MuteFrameAdvance)
 					{
 						atten = 0;
 					}
@@ -3120,7 +3098,7 @@ namespace BizHawk.Client.EmuHawk
 					MovieSession.Movie.SwitchToRecord();
 				}
 
-				if (isRewinding && ToolControllingRewind is null && MovieSession.Movie.IsRecording())
+				if (_isRewinding && ToolControllingRewind is null && MovieSession.Movie.IsRecording())
 				{
 					MovieSession.Movie.Truncate(Emulator.Frame);
 					if (!_wasRewinding)
@@ -3160,7 +3138,7 @@ namespace BizHawk.Client.EmuHawk
 				{
 					_framesSinceLastFpsUpdate++;
 
-					CalcFramerateAndUpdateDisplay(currentTimestamp, isRewinding, isFastForwarding);
+					CalcFramerateAndUpdateDisplay(currentTimestamp, _isRewinding, isFastForwarding);
 				}
 
 				if (IsSeeking && PauseOnFrame.Value <= Emulator.Frame)
@@ -3172,9 +3150,9 @@ namespace BizHawk.Client.EmuHawk
 					}
 				}
 
-				_wasRewinding = isRewinding;
+				_wasRewinding = _isRewinding;
 			}
-			else if (isRewinding)
+			else if (_isRewinding)
 			{
 				// Tools will want to be updated after rewind (load state), but we only need to manually do this if we did not frame advance.
 				UpdateToolsAfter();
@@ -4429,108 +4407,58 @@ namespace BizHawk.Client.EmuHawk
 			}
 		}
 
-		private bool Rewind(ref bool runFrame, long currentTimestamp, out bool returnToRecording)
+		private bool Rewind(ref bool runFrame, out bool returnToRecording)
 		{
-			var isRewinding = false;
-
 			returnToRecording = false;
+
+			bool rewindHotkeyEvent = PressRewind;
+			bool rewindByFrameProgress = runFrame && InputManager.ClientControls["Rewind"];
+			PressRewind = false;
 
 			if (ToolControllingRewind is { } rewindTool)
 			{
-				if (InputManager.ClientControls["Rewind"] || PressRewind)
+				if (rewindHotkeyEvent || rewindByFrameProgress)
 				{
-					if (_frameRewindTimestamp == 0)
-					{
-						isRewinding = true;
-						_frameRewindTimestamp = currentTimestamp;
-						_frameRewindWasPaused = EmulatorPaused;
-					}
-					else
-					{
-						double timestampDeltaMs = (double)(currentTimestamp - _frameRewindTimestamp) / Stopwatch.Frequency * 1000.0;
-						isRewinding = timestampDeltaMs >= Config.FrameProgressDelayMs;
-
-						// clear this flag once we get out of the progress stage
-						if (isRewinding)
-						{
-							_frameRewindWasPaused = false;
-						}
-
-						// if we're freely running, there's no need for reverse frame progress semantics (that may be debatable though)
-						if (!EmulatorPaused)
-						{
-							isRewinding = true;
-						}
-
-						if (_frameRewindWasPaused)
-						{
-							if (IsSeeking)
-							{
-								isRewinding = false;
-							}
-						}
-					}
-
-					if (isRewinding)
-					{
-						runFrame = Emulator.Frame > 1; // TODO: the master should be deciding this!
-						rewindTool.Rewind();
-					}
+					int oldFrame = Emulator.Frame;
+					bool wantsFrame = rewindTool.Rewind(rewindHotkeyEvent, rewindByFrameProgress);
+					bool didRewind = Emulator.Frame != oldFrame;
+					if (didRewind) runFrame = wantsFrame;
+					return didRewind;
 				}
-				else
-				{
-					_frameRewindTimestamp = 0;
-				}
-
-				return isRewinding;
+				return false;
 			}
 
-			if (Rewinder?.Active == true && (InputManager.ClientControls["Rewind"] || PressRewind))
+			bool rewind;
+			if (EmulatorPaused)
 			{
-				if (EmulatorPaused)
-				{
-					if (_frameRewindTimestamp == 0)
-					{
-						isRewinding = true;
-						_frameRewindTimestamp = currentTimestamp;
-					}
-					else
-					{
-						double timestampDeltaMs = (double)(currentTimestamp - _frameRewindTimestamp) / Stopwatch.Frequency * 1000.0;
-						isRewinding = timestampDeltaMs >= Config.FrameProgressDelayMs;
-					}
-				}
-				else
-				{
-					isRewinding = true;
-				}
-
-				if (isRewinding)
-				{
-					// Try to avoid the previous frame:  We want to frame advance right after rewinding so we can give a useful
-					// framebuffer.
-					var frameToAvoid = Emulator.Frame - 1;
-					runFrame = Rewinder.Rewind(frameToAvoid);
-					if (Emulator.Frame == frameToAvoid)
-					{
-						// The rewinder was unable to satisfy our request.  Prefer showing a stale framebuffer to
-						// advancing in a way that essentially no-ops the entire rewind.
-						runFrame = false;
-					}
-
-					if (runFrame && MovieSession.Movie.IsRecording())
-					{
-						MovieSession.Movie.SwitchToPlay();
-						returnToRecording = true;
-					}
-				}
+				rewind = rewindHotkeyEvent;
 			}
 			else
 			{
-				_frameRewindTimestamp = 0;
+				rewind = rewindByFrameProgress;
+			}
+			if (!rewind || !(Rewinder?.Active == true))
+			{
+				return false;
 			}
 
-			return isRewinding;
+			// Try to avoid the previous frame: We want to frame advance right
+			// after rewinding so we can give a useful framebuffer.
+			var frameToAvoid = Emulator.Frame - 1;
+			runFrame = Rewinder.Rewind(frameToAvoid);
+			if (Emulator.Frame == frameToAvoid)
+			{
+				// The rewinder was unable to satisfy our request.  Prefer showing a stale framebuffer to
+				// advancing in a way that essentially no-ops the entire rewind.
+				runFrame = false;
+			}
+
+			if (runFrame && MovieSession.Movie.IsRecording())
+			{
+				MovieSession.Movie.SwitchToPlay();
+				returnToRecording = true;
+			}
+			return true;
 		}
 
 		public IDialogController DialogController => this;

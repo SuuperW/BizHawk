@@ -16,7 +16,6 @@ namespace BizHawk.Client.EmuHawk
 
 		//if the emulator is paused then we don't need to behave as if unthrottled
 		public bool signal_paused;
-		public bool signal_frameAdvance;
 		public bool signal_unthrottle;
 		public bool signal_continuousFrameAdvancing;
 		public bool signal_overrideSecondaryThrottle;

@@ -203,7 +203,6 @@ namespace BizHawk.Client.Common
 		public bool N64UseCircularAnalogConstraint { get; set; } = true;
 
 		// Run-Control settings
-		public int FrameProgressDelayMs { get; set; } = 500; // how long until a frame advance hold turns into a frame progress?
 		public int FrameSkip { get; set; } = 4;
 		public int SpeedPercent { get; set; } = 100;
 		public int SpeedPercentAlternate { get; set; } = 400;

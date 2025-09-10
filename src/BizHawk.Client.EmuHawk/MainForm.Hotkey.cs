@@ -29,9 +29,7 @@ namespace BizHawk.Client.EmuHawk
 				// Hotkeys handled elsewhere, via the hotkey controller
 				case "Autohold":
 				case "Autofire":
-				case "Frame Advance":
 				case "Turbo":
-				case "Rewind":
 				case "Fast Forward":
 				case "Open RA Overlay":
 					break;
@@ -46,6 +44,12 @@ namespace BizHawk.Client.EmuHawk
 					return RA is RAIntegration { OverlayActive: true };
 
 				// General
+				case "Frame Advance":
+					PressFrameAdvance = true;
+					break;
+				case "Rewind":
+					PressRewind = true;
+					break;
 				case "Pause":
 					TogglePause();
 					break;
@@ -570,6 +574,23 @@ namespace BizHawk.Client.EmuHawk
 			}
 
 			return true;
+		}
+
+		public void PressHotkey(string hotkey, bool hold)
+		{
+			if (!hold)
+			{
+				CheckHotkey(hotkey);
+			}
+			else
+			{
+				InputManager.ClientOverrideAdapter.SetButton(hotkey, true);
+			}
+		}
+
+		public void ReleaseHotkey(string hotkey)
+		{
+			InputManager.ClientOverrideAdapter.UnSet(hotkey);
 		}
 	}
 }

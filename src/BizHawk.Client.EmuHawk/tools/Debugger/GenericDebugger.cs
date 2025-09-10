@@ -7,7 +7,7 @@ using BizHawk.Emulation.Common;
 
 namespace BizHawk.Client.EmuHawk
 {
-	public partial class GenericDebugger : ToolFormBase, IToolFormAutoConfig, IControlMainform
+	public partial class GenericDebugger : ToolFormBase, IToolFormAutoConfig
 	{
 		private const string AddressColumnName = "Address";
 		private const string InstructionColumnName = "Instruction";

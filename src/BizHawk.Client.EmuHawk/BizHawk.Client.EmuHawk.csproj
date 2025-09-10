@@ -333,7 +333,6 @@
 		<Compile Update="tools/Debugger/GenericDebugger.cs" SubType="Form" />
 		<Compile Update="tools/Debugger/GenericDebugger.Designer.cs" DependentUpon="GenericDebugger.cs" />
 		<Compile Update="tools/Debugger/GenericDebugger.Disassembler.cs" DependentUpon="GenericDebugger.cs" />
-		<Compile Update="tools/Debugger/GenericDebugger.IControlMainform.cs" DependentUpon="GenericDebugger.cs" />
 		<Compile Update="tools/Debugger/GenericDebugger.IToolForm.cs" DependentUpon="GenericDebugger.cs" />
 		<EmbeddedResource Update="tools/Debugger/GenericDebugger.resx" DependentUpon="GenericDebugger.cs" />
 		<Compile Update="tools/Debugger/RegisterBoxControl.cs" SubType="UserControl" />

@@ -48,6 +48,9 @@ namespace BizHawk.Client.Common
 
 		public Controller ClientControls { get; set; }
 
+		public OverrideAdapter ClientOverrideAdapter { get; } = new OverrideAdapter();
+
+
 		public Func<(Point Pos, long Scroll, bool LMB, bool MMB, bool RMB, bool X1MB, bool X2MB)> GetMainFormMouseInfo { get; set; }
 
 		public void SyncControls(IEmulator emulator, IMovieSession session, Config config)
@@ -220,8 +223,9 @@ namespace BizHawk.Client.Common
 		/// </summary>
 		public void RunControllerChain(Config config)
 		{
-			// client, only one step
+			// client
 			ClientControls.LatchFromPhysical(_hotkeyCoalescer);
+			ClientControls.Overrides(ClientOverrideAdapter);
 
 			// controller, which actually has a chain
 			List<string> oldPressedButtons = ActiveController.PressedButtons;

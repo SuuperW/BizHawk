@@ -75,11 +75,25 @@
 			// Do nothing, Tastudio handles this just fine
 		}
 
-		public bool Rewind()
+		public bool Rewind(bool byHotkeyEvent, bool byFrameProgress)
 		{
+			bool rewind;
+			if (MainForm.EmulatorPaused || (_seekingTo != -1 && _pauseAfterSeeking))
+			{
+				rewind = byHotkeyEvent;
+			}
+			else
+			{
+				// Either we should pause, or do something about turbo seek.
+				// Pausing is much easier, but the choice is debatable.
+				MainForm.PauseEmulator();
+				rewind = byFrameProgress;
+			}
+			if (!rewind) return false;
+
 			int rewindStep = MainForm.IsFastForwarding ? Settings.RewindStepFast : Settings.RewindStep;
 			WheelSeek(rewindStep);
-			return true;
+			return _seekingTo != -1;
 		}
 
 		public bool WantsToControlRestartMovie { get; }

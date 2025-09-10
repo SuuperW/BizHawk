@@ -130,32 +130,32 @@ namespace BizHawk.Client.EmuHawk
 
 		private void RewindButton_MouseDown(object sender, MouseEventArgs e)
 		{
-			Tastudio.MainForm.PressRewind = true;
+			Tastudio.MainForm.PressHotkey("Rewind", true);
 		}
 
 		private void RewindButton_MouseUp(object sender, MouseEventArgs e)
 		{
-			Tastudio.MainForm.PressRewind = false;
+			Tastudio.MainForm.ReleaseHotkey("Rewind");
 		}
 
 		private void RewindButton_MouseLeave(object sender, EventArgs e)
 		{
-			Tastudio.MainForm.PressRewind = false;
+			Tastudio.MainForm.ReleaseHotkey("Rewind");
 		}
 
 		private void FrameAdvanceButton_MouseDown(object sender, MouseEventArgs e)
 		{
-			Tastudio.MainForm.HoldFrameAdvance = true;
+			Tastudio.MainForm.PressHotkey("Frame Advance", true);
 		}
 
 		private void FrameAdvanceButton_MouseLeave(object sender, EventArgs e)
 		{
-			Tastudio.MainForm.HoldFrameAdvance = false;
+			Tastudio.MainForm.ReleaseHotkey("Frame Advance");
 		}
 
 		private void FrameAdvanceButton_MouseUp(object sender, MouseEventArgs e)
 		{
-			Tastudio.MainForm.HoldFrameAdvance = false;
+			Tastudio.MainForm.ReleaseHotkey("Frame Advance");
 		}
 	}
 }

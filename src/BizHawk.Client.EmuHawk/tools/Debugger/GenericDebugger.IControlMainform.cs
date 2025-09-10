@@ -38,7 +38,7 @@
 		// TODO: We probably want to do this
 		public bool WantsToControlRewind => false;
 		public void CaptureRewind() { }
-		public bool Rewind() => false;
+		public bool Rewind(bool byHotkeyEvent, bool byFrameProgress) => false;
 
 		public bool WantsToControlRestartMovie => false;
 

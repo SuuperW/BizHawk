@@ -54,9 +54,13 @@
 		/// <summary>
 		/// Function that is called by Mainform instead of using its own code
 		/// when a Tool sets WantsToControlRewind
-		/// Returns whether or not the rewind action actually occured
+		/// One or both of the parameters will be true.
+		/// The return value is ignored if no rewind occured (the current emulator frame did not change).
 		/// </summary>
-		bool Rewind();
+		/// <param name="byHotkeyEvent">True if the rewind is happening because of a hotkey event.</param>
+		/// <param name="byFrameProgress">True if the rewind is happening because it is time for the next frame and rewind hotkey is currently held.</param>
+		/// <returns>Returns true if a frame advance is required.</returns>
+		bool Rewind(bool byHotkeyEvent, bool byFrameProgress);
 
 		bool WantsToControlRestartMovie { get; }
 

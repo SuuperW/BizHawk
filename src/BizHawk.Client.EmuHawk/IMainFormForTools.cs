@@ -23,9 +23,6 @@ namespace BizHawk.Client.EmuHawk
 		/// <remarks>only referenced from <see cref="TAStudio"/></remarks>
 		bool GameIsClosing { get; }
 
-		/// <remarks>only referenced from <see cref="PlaybackBox"/></remarks>
-		bool HoldFrameAdvance { get; set; }
-
 		/// <remarks>only referenced from <see cref="BasicBot"/></remarks>
 		bool InvisibleEmulation { get; set; }
 
@@ -39,9 +36,6 @@ namespace BizHawk.Client.EmuHawk
 		bool IsFastForwarding { get; }
 
 		int? PauseOnFrame { get; set; }
-
-		/// <remarks>only referenced from <see cref="PlaybackBox"/></remarks>
-		bool PressRewind { get; set; }
 
 		BitmapBuffer CaptureOSD();
 
@@ -77,6 +71,10 @@ namespace BizHawk.Client.EmuHawk
 		void PauseEmulator();
 
 		bool BlockFrameAdvance { get; set; }
+
+		void PressHotkey(string hotkey, bool hold = false);
+
+		void ReleaseHotkey(string hotkey);
 
 		/// <remarks>only referenced from <see cref="TAStudio"/></remarks>
 		void SeekFrameAdvance();

@@ -1695,6 +1695,7 @@ namespace BizHawk.Client.EmuHawk
 		private bool _wasRewinding;
 		private bool _lastFastForwardingOrRewinding;
 		private bool _inResizeLoop;
+		private bool _throttleCommplete;
 
 		private readonly double _fpsUpdatesPerSecond = 4.0;
 		private readonly double _fpsSmoothing = 8.0;
@@ -2934,7 +2935,7 @@ namespace BizHawk.Client.EmuHawk
 			_throttle.signal_frameAdvance = _runloopFrameAdvance;
 			_throttle.signal_continuousFrameAdvancing = _runloopFrameProgress;
 
-			_throttle.Step(Config, Sound, allowSleep: true, forceFrameSkip: -1);
+			_throttleCommplete = _throttle.Step(Config, Sound, allowSleep: true, forceFrameSkip: -1);
 		}
 
 		public void FrameAdvance(bool discardApiHawkSurfaces)
@@ -3019,7 +3020,7 @@ namespace BizHawk.Client.EmuHawk
 			if (!EmulatorPaused)
 #endif
 			{
-				runFrame = true;
+				runFrame |= _throttleCommplete;
 			}
 
 			bool isRewinding = Rewind(ref runFrame, currentTimestamp, out var returnToRecording);

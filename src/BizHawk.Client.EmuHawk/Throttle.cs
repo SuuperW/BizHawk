@@ -21,7 +21,7 @@ namespace BizHawk.Client.EmuHawk
 		public bool signal_continuousFrameAdvancing;
 		public bool signal_overrideSecondaryThrottle;
 
-		public void Step(Config config, Sound sound, bool allowSleep, int forceFrameSkip)
+		public bool Step(Config config, Sound sound, bool allowSleep, int forceFrameSkip)
 		{
 			//TODO - figure out what allowSleep is supposed to be used for
 			//TODO - figure out what forceFrameSkip is supposed to be used for
@@ -36,7 +36,7 @@ namespace BizHawk.Client.EmuHawk
 
 				//keep from burning CPU
 				Thread.Sleep(15);
-				return;
+				return true;
 			}
 
 #if false
@@ -77,9 +77,10 @@ namespace BizHawk.Client.EmuHawk
 				skipNextFrame = framesToSkip > 0;
 			}
 
+			bool ret = true;
 			if ((signal_paused || config.ClockThrottle || signal_overrideSecondaryThrottle) && allowSleep)
 			{
-				SpeedThrottle(sound, signal_paused);
+				ret = SpeedThrottle(sound, signal_paused);
 			}
 
 			if (signal_unthrottle || !config.AutoMinimizeSkipping)
@@ -98,6 +99,7 @@ namespace BizHawk.Client.EmuHawk
 			}
 
 			framesToSkip--;
+			return ret;
 		}
 
 		private static ulong GetCurTime()
@@ -277,7 +279,7 @@ namespace BizHawk.Client.EmuHawk
 			return rv;
 		}
 
-		private void SpeedThrottle(Sound sound, bool paused)
+		private bool SpeedThrottle(Sound sound, bool paused)
 		{
 			AutoFrameSkip_BeforeThrottle();
 
@@ -286,7 +288,7 @@ namespace BizHawk.Client.EmuHawk
 			while (true)
 			{
 				if (signal_unthrottle)
-					return;
+					return true;
 
 				ulong ttime = GetCurTime();
 				ulong elapsedTime = ttime - ltime;
@@ -302,12 +304,14 @@ namespace BizHawk.Client.EmuHawk
 					else
 						ltime += timePerFrame;
 
-					return;
+					return true;
 				}
 
 				int sleepTime = (int)((timePerFrame - elapsedTime) * 1000 / afsfreq);
 				if (sleepTime >= 2 || paused)
 				{
+					const int MAX_SLEEP = 16;
+					bool earlyExit = sleepTime > MAX_SLEEP;
 					switch (OSTailoredCode.CurrentOS)
 					{
 						case OSTailoredCode.DistinctOS.Linux: //TODO repro
@@ -326,7 +330,9 @@ namespace BizHawk.Client.EmuHawk
 							break;
 					}
 
+					sleepTime = Math.Min(sleepTime, MAX_SLEEP);
 					Thread.Sleep(Math.Max(sleepTime, 1));
+					if (earlyExit) return false;
 				}
 				else if (sleepTime > 0) // spin for <1 millisecond waits
 				{

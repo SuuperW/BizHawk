@@ -31,6 +31,20 @@ namespace BizHawk.Client.EmuHawk
 		public virtual bool IsActive => IsHandleCreated && !IsDisposed;
 		public virtual bool IsLoaded => IsActive;
 
+		public ToolFormBase() { }
+
+		/// <summary>
+		/// THIS IS FOR TEST CODE USE
+		/// Not suitable for non-test use.
+		/// </summary>
+		public ToolFormBase(ToolFormDependencyProvider dependencyProvider)
+		{
+			MainForm = dependencyProvider.MainForm;
+			MovieSession = dependencyProvider.MovieSession;
+			Game = dependencyProvider.GameInfo;
+			Config = dependencyProvider.Config;
+		}
+
 		public virtual void Restart() {}
 
 		public void SetToolFormBaseProps(

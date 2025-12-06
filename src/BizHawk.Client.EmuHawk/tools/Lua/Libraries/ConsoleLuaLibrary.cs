@@ -16,6 +16,8 @@ namespace BizHawk.Client.EmuHawk
 		public ConsoleLuaLibrary(ILuaLibraries luaLibsImpl, ApiContainer apiContainer, Action<string> logOutputCallback)
 			: base(luaLibsImpl, apiContainer, logOutputCallback) {}
 
+		public Action<string> Print { get; set; }
+
 		public override string Name => "console";
 
 		[LuaMethodExample("console.clear( );")]
@@ -57,11 +59,6 @@ namespace BizHawk.Client.EmuHawk
 		// Outputs the given object to the output box on the Lua Console dialog. Note: Can accept a LuaTable
 		private void LogWithSeparator(string separator, string terminator, params object[] outputs)
 		{
-			if (!Tools.Has<LuaConsole>())
-			{
-				return;
-			}
-
 			var sb = new StringBuilder();
 
 			void SerializeAndWrite(object output)
@@ -75,7 +72,7 @@ namespace BizHawk.Client.EmuHawk
 
 			if (outputs == null || outputs.Length == 0 || (outputs.Length == 1 && outputs[0] is null))
 			{
-				Tools.LuaConsole.WriteToOutputWindow($"(no return){terminator}");
+				Print($"(no return){terminator}");
 				return;
 			}
 
@@ -91,7 +88,7 @@ namespace BizHawk.Client.EmuHawk
 				sb.Append(terminator);
 			}
 
-			Tools.LuaConsole.WriteToOutputWindow(sb.ToString());
+			Print(sb.ToString());
 		}
 	}
 }

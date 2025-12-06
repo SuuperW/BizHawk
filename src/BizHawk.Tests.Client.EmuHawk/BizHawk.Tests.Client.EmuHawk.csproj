@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net48</TargetFramework>
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<UseWindowsForms>true</UseWindowsForms>
+	</PropertyGroup>
+	<Import Project="../MainSlnTest.props" />
+	<ItemGroup>
+		<!-- Note that the Properties field here is ignored by Visual Studio. Run tests with `dotnet run` or:
+		Add <TESTING>true</TESTING> at line 4 of MainSlnExecutable.props for tests to work in Visual Studio.
+		This will break regular builds, so be sure to remove it after running the tests. -->
+		<ProjectReference Include="$(ProjectDir)../BizHawk.Client.EmuHawk/BizHawk.Client.EmuHawk.csproj" Properties="TESTING=true" />
+		<ProjectReference Include="..\BizHawk.Tests.Client.Common\BizHawk.Tests.Client.Common.csproj" />
+		<EmbeddedResource Include="data/**/*" />
+		<None Include="$(ProjectDir)../../Assets/dll/e_sqlite3.*" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="$(ProjectDir)/lua/scripts/**/*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+	
+	<Target Name="CleanForVisualStudioSucks" BeforeTargets="PreBuildEvent">
+		<Delete Files="$(OutputPath)BizHawk.Client.EmuHawk.dll" />
+	</Target>
+	<Target Name="VisualStudioSucks" AfterTargets="_CleanGetCurrentAndPriorFileWrites" BeforeTargets="PostBuildEvent">
+		<Error Condition="!Exists('$(OutputPath)BizHawk.Client.EmuHawk.dll')" Text="If you have another error about a metadata file that can't be found: Visual Studio ignores certain build instructions. See comment in BizHawk.Tests.Client.EmuHawk.csproj for dtails." />
+	</Target>
+</Project>

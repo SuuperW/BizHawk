@@ -7,5 +7,6 @@
 		<ProjectReference Include="$(ProjectDir)../BizHawk.Client.Common/BizHawk.Client.Common.csproj" />
 		<ProjectReference Include="$(ProjectDir)../BizHawk.Tests.Common/BizHawk.Tests.Common.csproj" />
 		<EmbeddedResource Include="data/**/*" />
+		<InternalsVisibleTo Include="BizHawk.Tests.Client.EmuHawk" />
 	</ItemGroup>
 </Project>

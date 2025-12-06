@@ -36,7 +36,7 @@ namespace BizHawk.Client.EmuHawk
 		private readonly LuaAutocompleteInstaller _luaAutoInstaller = new();
 		private readonly Dictionary<LuaFile, FileSystemWatcher> _watches = new();
 
-		private readonly int _defaultSplitDistance;
+		private int _defaultSplitDistance;
 		private LuaFile _lastScriptUsed = null;
 
 		[RequiredService]
@@ -80,6 +80,11 @@ namespace BizHawk.Client.EmuHawk
 		protected override string WindowTitleStatic => "Lua Console";
 
 		public LuaConsole()
+		{
+			Initialize();
+		}
+
+		private void Initialize()
 		{
 			Settings = new LuaConsoleSettings();
 			_sortReverse = false;
@@ -149,8 +154,25 @@ namespace BizHawk.Client.EmuHawk
 			LuaListView.QueryItemIcon += LuaListView_QueryItemImage;
 
 			// this is bad, in case we ever have more than one gui part running lua.. not sure how much other badness there is like that
-			LuaSandbox.DefaultLogger = WriteToOutputWindow;
+			Print = WriteToOutputWindow;
+			LuaSandbox.DefaultLogger = Print;
 			_defaultSplitDistance = splitContainer1.SplitterDistance;
+		}
+
+		/// <summary>
+		/// THIS IS FOR TEST CODE USE
+		/// Not suitable for non-test use.
+		/// </summary>
+		public LuaConsole(LuaDependencyProvider dependencyProvider) : base(dependencyProvider)
+		{
+			Initialize();
+
+			Emulator = dependencyProvider.Emulator;
+			if (dependencyProvider.Logger != null)
+				Print = dependencyProvider.Logger.Log;
+			else
+				Print = WriteToOutputWindow;
+			LuaSandbox.DefaultLogger = Print;
 		}
 
 		private LuaLibraries LuaImp;
@@ -214,12 +236,16 @@ namespace BizHawk.Client.EmuHawk
 				newScripts,
 				registeredFuncList,
 				Emulator.ServiceProvider,
-				(MainForm) MainForm, //HACK
+				MainForm.MainForApi,
 				DisplayManager,
 				InputManager,
 				Config,
 				Emulator,
-				Game);
+				Game,
+				MovieSession,
+				Tools,
+				DialogController,
+				Print);
 
 			InputBox.AutoCompleteCustomSource.Clear();
 			InputBox.AutoCompleteCustomSource.AddRange(LuaImp.Docs.Where(static f => f.SuggestInREPL)
@@ -483,7 +509,9 @@ namespace BizHawk.Client.EmuHawk
 			NumberOfScripts.Text = message;
 		}
 
-		private void WriteLine(string message) => WriteToOutputWindow(message + "\n");
+		private Action<string> Print;
+
+		private void WriteLine(string message) => Print(message + "\n");
 
 		private int _messageCount;
 		private const int MaxCount = 100;

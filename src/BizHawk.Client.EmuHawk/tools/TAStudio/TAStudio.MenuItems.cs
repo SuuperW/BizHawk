@@ -435,6 +435,7 @@ namespace BizHawk.Client.EmuHawk
 					return;
 				}
 
+				// remove inputs not in _visibleDefintion
 				_tasClipboard.Add(new TasClipboardEntry(i, line));
 			}
 
@@ -526,6 +527,7 @@ namespace BizHawk.Client.EmuHawk
 			var framesToInsert = TasView.SelectedRows;
 			var insertionFrame = Math.Min((TasView.SelectionEndIndex ?? 0) + 1, CurrentTasMovie.InputLogLength);
 
+			// Get controller instead of string log
 			var inputLog = framesToInsert
 				.Select(CurrentTasMovie.GetInputLogEntry)
 				.ToList();
@@ -761,6 +763,8 @@ namespace BizHawk.Client.EmuHawk
 					TasView.Refresh();
 					ColumnsSubMenu.ShowDropDown();
 					((ToolStripMenuItem)sender.OwnerItem).ShowDropDown();
+
+					UpdateActiveMovieInputs();
 				};
 
 				if (column.Name.StartsWithOrdinal("Key "))
@@ -995,6 +999,8 @@ namespace BizHawk.Client.EmuHawk
 
 					UpdateChangeLogMaxSteps(Settings.MaxUndoSteps);
 					CurrentTasMovie.BindMarkersToInput = Settings.BindMarkersToInput;
+
+					UpdateActiveMovieInputs();
 				}
 			);
 			settingsForm.ShowDialog(this);

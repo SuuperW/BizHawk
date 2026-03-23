@@ -967,6 +967,12 @@ namespace BizHawk.Client.EmuHawk
 		public int FirstSelectedRowIndex
 			=> SelectedRowsWithDuplicates.First();
 
+		/// <returns>the <see cref="Cell.RowIndex"/> of the last row in the selection list (throws if no rows are selected)</returns>
+		/// <remarks>you probably want <see cref="SelectionEndIndex"/></remarks>
+		[Browsable(false)]
+		public int LastSelectedRowIndex
+			=> SelectedRowsWithDuplicates.Last();
+
 		public bool IsRowSelected(int rowIndex)
 			=> _selectedItems.IncludesRow(rowIndex);
 

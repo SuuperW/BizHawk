@@ -1206,20 +1206,6 @@ namespace BizHawk.Client.EmuHawk
 			GenericDragEnter(sender, e);
 		}
 
-		private void SetFontMenuItem_Click(object sender, EventArgs e)
-		{
-			using var fontDialog = new FontDialog
-			{
-				ShowColor = false,
-				Font = TasView.Font,
-			};
-			if (fontDialog.ShowDialog() != DialogResult.Cancel)
-			{
-				TasView.Font = Settings.TasViewFont = fontDialog.Font;
-				TasView.Refresh();
-			}
-		}
-
 		private IMovieController ControllerFromMnemonicStr(string inputLogEntry)
 		{
 			try
@@ -1260,12 +1246,13 @@ namespace BizHawk.Client.EmuHawk
 
 		private void HandleRotationChanged(object sender, EventArgs e)
 		{
+			InputRoll roll = (InputRoll)sender;
 			CurrentTasMovie.FlagChanges();
-			if (TasView.HorizontalOrientation)
+			if (roll.HorizontalOrientation)
 			{
 				BranchesMarkersSplit.Orientation = Orientation.Vertical;
 				BranchesMarkersSplit.SplitterDistance = 200;
-				foreach (var rollColumn in TasView.AllColumns)
+				foreach (var rollColumn in roll.AllColumns)
 				{
 					rollColumn.Width = rollColumn.HorizontalHeight;
 				}
@@ -1274,13 +1261,13 @@ namespace BizHawk.Client.EmuHawk
 			{
 				BranchesMarkersSplit.Orientation = Orientation.Horizontal;
 				BranchesMarkersSplit.SplitterDistance = _defaultBranchMarkerSplitDistance;
-				foreach (var rollColumn in TasView.AllColumns)
+				foreach (var rollColumn in roll.AllColumns)
 				{
 					rollColumn.Width = rollColumn.VerticalWidth;
 				}
 			}
 
-			TasView.AllColumns.ColumnsChanged();
+			roll.AllColumns.ColumnsChanged();
 		}
 
 		private bool _suspendEditLogic;

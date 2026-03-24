@@ -95,6 +95,8 @@ namespace BizHawk.Client.EmuHawk
 		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 		public bool SuspendHotkeys { get; set; }
 
+		public event Action ColumnsChanged;
+
 		public InputRoll()
 		{
 			SetStyle(ControlStyles.AllPaintingInWmPaint, true);
@@ -1652,6 +1654,8 @@ namespace BizHawk.Client.EmuHawk
 			{
 				MaxColumnWidth = _columns.VisibleColumns.Max(c => c.VerticalWidth);
 			}
+
+			ColumnsChanged?.Invoke();
 		}
 
 		private void DoColumnReorder()
@@ -1893,7 +1897,7 @@ namespace BizHawk.Client.EmuHawk
 		private bool NeedsHScrollbar { get; set; }
 
 		// Gets the total width of all the columns by using the last column's Right property.
-		private int TotalColWidth => _columns.VisibleColumns.Any()
+		public int TotalColWidth => _columns.VisibleColumns.Any()
 			? _columns.VisibleColumns.Last().Right
 			: 0;
 

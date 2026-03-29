@@ -1748,7 +1748,6 @@ namespace BizHawk.Client.EmuHawk
 					}
 				}
 
-				_vBar.Location = new Point(Width - _vBar.Width, 0);
 				_vBar.Height = Height;
 				_vBar.Visible = true;
 			}
@@ -1770,7 +1769,6 @@ namespace BizHawk.Client.EmuHawk
 					_hBar.Maximum = TotalColWidth - _drawWidth + _hBar.LargeChange;
 				}
 
-				_hBar.Location = new Point(0, Height - _hBar.Height);
 				_hBar.Width = Width - (NeedsVScrollbar ? (_vBar.Width + 1) : 0);
 				_hBar.Visible = true;
 			}
@@ -1779,6 +1777,17 @@ namespace BizHawk.Client.EmuHawk
 				_hBar.Visible = false;
 				_hBar.Value = 0;
 			}
+
+			RepositionScrollbars();
+		}
+
+		public void RepositionScrollbars()
+		{
+			int edge = Parent != null ? Math.Min(Width, Parent.Width - Left) : Width;
+			_vBar.Location = new Point(Math.Max(edge - _vBar.Width, 0), 0);
+
+			edge = Parent != null ? Math.Min(Height, Parent.Height - Top) : Height;
+			_hBar.Location = new Point(0, Math.Max(edge - _hBar.Height, 0));
 		}
 
 		private void UpdateDrawSize()

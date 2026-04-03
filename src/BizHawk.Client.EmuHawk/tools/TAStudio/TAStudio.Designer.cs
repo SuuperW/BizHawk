@@ -491,7 +491,7 @@ namespace BizHawk.Client.EmuHawk
 			this.TasView.CellHeightPadding = 0;
 			this.TasView.ChangeSelectionWhenPaging = false;
 			this.TasView.Font = new System.Drawing.Font("Arial", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.TasView.FullRowSelect = true;
+			this.TasView.FullRowSelect = false;
 			this.TasView.HorizontalOrientation = false;
 			this.TasView.InputPaintingMode = true;
 			this.TasView.LetKeysModifySelection = true;

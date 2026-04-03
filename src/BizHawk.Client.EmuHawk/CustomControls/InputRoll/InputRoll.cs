@@ -19,6 +19,14 @@ namespace BizHawk.Client.EmuHawk
 	// Row width is specified for horizontal orientation
 	public partial class InputRoll : Control
 	{
+		public enum SelectionMode
+		{
+			Default,
+			None,
+			Row,
+			Cell,
+		}
+
 		private readonly IControlRenderer _renderer;
 
 		private CellList _selectedItems = new();
@@ -510,7 +518,7 @@ namespace BizHawk.Client.EmuHawk
 		/// <summary>
 		/// Check if clicking the current cell should select it.
 		/// </summary>
-		public delegate bool QueryShouldSelectCellHandler(MouseButtons button);
+		public delegate SelectionMode QueryShouldSelectCellHandler(MouseButtons button);
 
 		public delegate void CellChangeEventHandler(object sender, CellEventArgs e);
 
@@ -967,6 +975,9 @@ namespace BizHawk.Client.EmuHawk
 		public int FirstSelectedRowIndex
 			=> SelectedRowsWithDuplicates.First();
 
+		public RollColumn FirstSelectedColumn
+			=> _selectedItems.Min().Column;
+
 		public bool IsRowSelected(int rowIndex)
 			=> _selectedItems.IncludesRow(rowIndex);
 
@@ -1145,11 +1156,29 @@ namespace BizHawk.Client.EmuHawk
 					OnMouseMove(e);
 			}
 
-			if (IsHoveringOnDataCell && QueryShouldSelectCell?.Invoke(e.Button) != false)
+			bool shouldSelect = false;
+			bool useDefaultSelection = true;
+			SelectionMode mode = SelectionMode.Default;
+			if (IsHoveringOnDataCell)
 			{
 				if (e.Button == MouseButtons.Left)
 				{
-					if (ModifierKeys is Keys.Shift)
+					SelectionMode result = QueryShouldSelectCell(e.Button);
+					shouldSelect = result != SelectionMode.None; // bad
+					useDefaultSelection = result == SelectionMode.Default;
+					mode = result;
+				}
+				else
+				{
+					shouldSelect = true;
+				}
+			}
+
+			if (e.Button == MouseButtons.Left)
+			{
+				if (shouldSelect)
+				{
+					if (ModifierKeys == Keys.Alt)
 					{
 						if (_selectedItems.Count is not 0)
 						{
@@ -1191,17 +1220,17 @@ namespace BizHawk.Client.EmuHawk
 						}
 						else
 						{
-							SelectCell(CurrentCell);
+							SelectCell(CurrentCell, mode: mode);
 						}
 					}
 					else if (ModifierKeys is Keys.Control)
 					{
-						SelectCell(CurrentCell, toggle: true);
+						SelectCell(CurrentCell, toggle: true, mode: mode);
 					}
 					else if (ModifierKeys != Keys.Alt)
 					{
 						_selectedItems.Clear();
-						SelectCell(CurrentCell);
+						SelectCell(CurrentCell, mode: mode);
 					}
 
 					Refresh();
@@ -1214,7 +1243,7 @@ namespace BizHawk.Client.EmuHawk
 					if (!_selectedItems.Contains(CurrentCell))
 					{
 						_selectedItems.Clear();
-						SelectCell(CurrentCell);
+						SelectCell(CurrentCell, mode: mode);
 
 						Refresh();
 
@@ -1425,8 +1454,10 @@ namespace BizHawk.Client.EmuHawk
 						if (selectedRow > 0)
 						{
 							var targetSelectedRow = selectedRow - 1;
+							RollColumn col = FirstSelectedColumn;
 							DeselectAll();
-							SelectRow(targetSelectedRow, true);
+							//SelectRow(targetSelectedRow, true);
+							SelectCell(new() { RowIndex = targetSelectedRow, Column = col });
 							ScrollToIndex(targetSelectedRow);
 							Refresh();
 							SelectedIndexChanged?.Invoke(this, EventArgs.Empty);
@@ -1441,8 +1472,64 @@ namespace BizHawk.Client.EmuHawk
 						if (selectedRow < RowCount - 1)
 						{
 							var targetSelectedRow = selectedRow + 1;
+							RollColumn col = FirstSelectedColumn;
 							DeselectAll();
-							SelectRow(targetSelectedRow, true);
+							//SelectRow(targetSelectedRow, true);
+							SelectCell(new() { RowIndex = targetSelectedRow, Column = col });
+							ScrollToIndex(targetSelectedRow);
+							Refresh();
+							SelectedIndexChanged?.Invoke(this, EventArgs.Empty);
+						}
+					}
+				}
+				else if (e.IsPressed(Keys.Right))
+				{
+					if (AnyRowsSelected)
+					{
+						var selectedRow = FirstSelectedRowIndex;
+						if (selectedRow < RowCount - 1)
+						{
+							var targetSelectedRow = selectedRow;
+							RollColumn col = FirstSelectedColumn;
+							int colIndex = AllColumns.IndexOf(col) + 1;
+							while (colIndex < AllColumns.Count && !AllColumns[colIndex].Visible)
+							{
+								colIndex++;
+							}
+							if (colIndex == AllColumns.Count)
+								return;
+							col = AllColumns[colIndex];
+
+							DeselectAll();
+							//SelectRow(targetSelectedRow, true);
+							SelectCell(new() { RowIndex = targetSelectedRow, Column = col });
+							ScrollToIndex(targetSelectedRow);
+							Refresh();
+							SelectedIndexChanged?.Invoke(this, EventArgs.Empty);
+						}
+					}
+				}
+				else if (e.IsPressed(Keys.Left))
+				{
+					if (AnyRowsSelected)
+					{
+						var selectedRow = FirstSelectedRowIndex;
+						if (selectedRow < RowCount - 1)
+						{
+							var targetSelectedRow = selectedRow;
+							RollColumn col = FirstSelectedColumn;
+							int colIndex = AllColumns.IndexOf(col) - 1;
+							while (colIndex >= 0 && !AllColumns[colIndex].Visible)
+							{
+								colIndex--;
+							}
+							if (colIndex == -1)
+								return;
+							col = AllColumns[colIndex];
+
+							DeselectAll();
+							//SelectRow(targetSelectedRow, true);
+							SelectCell(new() { RowIndex = targetSelectedRow, Column = col });
 							ScrollToIndex(targetSelectedRow);
 							Refresh();
 							SelectedIndexChanged?.Invoke(this, EventArgs.Empty);
@@ -1800,8 +1887,16 @@ namespace BizHawk.Client.EmuHawk
 		/// </summary>
 		/// <param name="cell">The cell to select.</param>
 		/// <param name="toggle">Specifies whether or not to toggle the current state, rather than force the value to true</param>
-		private void SelectCell(Cell cell, bool toggle = false)
+		private void SelectCell(Cell cell, bool toggle = false, SelectionMode mode = SelectionMode.Default)
 		{
+			if (mode == SelectionMode.Default)
+				mode = FullRowSelect ? SelectionMode.Row : SelectionMode.Cell;
+			bool wasfullrow = FullRowSelect;
+			if (mode == SelectionMode.Cell)
+			{
+				FullRowSelect = false;
+			}
+
 			if (cell.RowIndex is int row && row < RowCount)
 			{
 				if (!MultiSelect)
@@ -1810,7 +1905,7 @@ namespace BizHawk.Client.EmuHawk
 					_lastSelectedRow = null;
 				}
 
-				if (FullRowSelect)
+				if (mode == SelectionMode.Row)
 				{
 					if (toggle && _selectedItems.IncludesRow(row))
 					{
@@ -1841,10 +1936,12 @@ namespace BizHawk.Client.EmuHawk
 					}
 					else
 					{
-						_selectedItems.Add(CurrentCell);
+						_selectedItems.Add(cell);
 					}
 				}
 			}
+
+			FullRowSelect = wasfullrow;
 		}
 
 		private bool IsHoveringOnColumnCell => CurrentCell?.Column != null && !CurrentCell.RowIndex.HasValue;

@@ -102,11 +102,12 @@ namespace BizHawk.Client.EmuHawk
 		/// <remarks>restore the distinctness invariant from <see cref="System.Collections.Generic.SortedSet{T}"/>; though I don't think we actually rely on it anywhere --yoshi</remarks>
 		public override void Add(Cell item)
 		{
+			if (item == null) throw new Exception();
 			var i = _list.BinarySearch(item);
 			if (i >= 0)
 			{
 				//TODO We can end up adding cells that are already selected pretty easily, by combining Alt multi-selection with Shift range-selection.
-				System.Diagnostics.Debug.Assert(false, $"{nameof(CellList)}'s distinctness invariant was almost broken! CellList.Add({(item is null ? "null" : item.ToString())})");
+				//System.Diagnostics.Debug.Assert(false, $"{nameof(CellList)}'s distinctness invariant was almost broken! CellList.Add({(item is null ? "null" : item.ToString())})");
 				return;
 			}
 			_list.Insert(~i, item);

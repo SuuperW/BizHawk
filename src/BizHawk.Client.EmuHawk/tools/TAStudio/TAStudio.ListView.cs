@@ -286,19 +286,19 @@ namespace BizHawk.Client.EmuHawk
 			}
 		}
 
-		private bool TasView_QueryShouldSelect(MouseButtons button)
+		private InputRoll.SelectionMode TasView_QueryShouldSelect(MouseButtons button)
 		{
 			if (AxisEditingMode)
 			{
 				if (ModifierKeys == Keys.Shift || ModifierKeys == Keys.Control)
 				{
 					// This just makes it easier to select multiple rows with axis editing mode, by allowing multiple row selection when clicking columns that aren't the frame column.
-					return true;
+					return InputRoll.SelectionMode.Row;
 				}
 				else if (TasView.CurrentCell.Column.Name == AxisEditColumn && TasView.IsRowSelected(TasView.CurrentCell.RowIndex.Value))
 				{
 					// We will start editing via mouse, so don't unselect if we have multiple selected rows.
-					return false;
+					return InputRoll.SelectionMode.None;
 				}
 				else
 				{
@@ -310,18 +310,24 @@ namespace BizHawk.Client.EmuHawk
 
 			if (TasView.CurrentCell.Column.Name == FrameColumnName)
 			{
-				return true;
+				return InputRoll.SelectionMode.Row;
 			}
 			else if (ModifierKeys == Keys.Shift)
 			{
-				return false;
+				return InputRoll.SelectionMode.None;
 			}
 			else
 			{
 				// This may not be necessary, but it is the behavior we've always had based on copying what TASeditor does.
 				// Ctrl-click on a button selects the same as a regular click: the only row left selected is the one clicked
 				if (ModifierKeys == Keys.Control) TasView.DeselectAll();
-				return true;
+
+				if (MovieSession.MovieController.Definition.Axes.ContainsKey(TasView.CurrentCell.Column.Name))
+				{
+					return InputRoll.SelectionMode.Cell;
+				}
+				else
+					return InputRoll.SelectionMode.Row;
 			}
 		}
 
@@ -1295,6 +1301,8 @@ namespace BizHawk.Client.EmuHawk
 
 		private void TasView_SelectedIndexChanged(object sender, EventArgs e)
 		{
+			_axisTypedValue = "";
+			_didAxisType = false;
 			SetSplicer();
 		}
 
@@ -1373,13 +1381,23 @@ namespace BizHawk.Client.EmuHawk
 
 		public void EditAnalogProgrammatically(KeyEventArgs e)
 		{
-			if (!AxisEditingMode)
+			//if (!AxisEditingMode)
+
+			if (!TasView.AnyRowsSelected)
 			{
 				return;
 			}
 
 			string prevTyped = _axisTypedValue;
-			AxisSpec axis = ControllerType.Axes[AxisEditColumn];
+			string editCol = AxisEditColumn;
+			if (!AxisEditingMode)
+			{
+				if (ControllerType.Axes.ContainsKey(TasView.FirstSelectedColumn.Name))
+					editCol = TasView.FirstSelectedColumn.Name;
+				else
+					return;
+			}
+			AxisSpec axis = ControllerType.Axes[editCol];
 
 			int charToType = -1;
 			if (e.KeyCode is >= Keys.D0 and <= Keys.D9)
@@ -1412,7 +1430,7 @@ namespace BizHawk.Client.EmuHawk
 			{
 				if (!_didAxisType)
 				{
-					_axisTypedValue = CurrentTasMovie.GetAxisState(TasView.SelectedRows.First(), AxisEditColumn).ToString();
+					_axisTypedValue = CurrentTasMovie.GetAxisState(TasView.SelectedRows.First(), editCol).ToString();
 					_didAxisType = true;
 				}
 				if (_axisTypedValue.Length != 0)
@@ -1424,7 +1442,7 @@ namespace BizHawk.Client.EmuHawk
 			{
 				AxisEditColumn = null;
 			}
-			else if (e.KeyCode == Keys.Escape)
+			else if (e.KeyCode == Keys.Escape && AxisEditingMode)
 			{
 				AxisEditColumn = null;
 				CurrentTasMovie.ChangeLog.Undo(_axisRestoreId);
@@ -1456,7 +1474,7 @@ namespace BizHawk.Client.EmuHawk
 				{
 					foreach (int row in TasView.SelectedRows)
 					{
-						CurrentTasMovie.SetAxisState(row, AxisEditColumn, value);
+						CurrentTasMovie.SetAxisState(row, editCol, value);
 					}
 				});
 			}
@@ -1480,7 +1498,7 @@ namespace BizHawk.Client.EmuHawk
 				GoToFrame(CurrentTasMovie.InputLogLength-1);
 			}
 
-			if (AxisEditingMode)
+			//if (AxisEditingMode)
 			{
 				EditAnalogProgrammatically(e);
 			}

@@ -212,6 +212,7 @@ namespace BizHawk.Client.EmuHawk
 			roll.CellDropped += TasView_CellDropped;
 			roll.RotationChanged += HandleRotationChanged;
 			roll.ColumnsChanged += RepositionRolls;
+			roll.RowScroll += TasView_RowScroll;
 
 			roll.QueryItemText += TasView_QueryItemText;
 			roll.QueryItemBkColor += TasView_QueryItemBkColor;
@@ -227,6 +228,11 @@ namespace BizHawk.Client.EmuHawk
 					toolTip1.Show(e.NewCell.Column!.Name, roll, roll.PointToClient(Cursor.HotSpot));
 				}
 			};
+
+			if (_inputRolls.Count != 0 && Settings.ScrollSync)
+			{
+				roll.FirstVisibleRow = _inputRolls[0].FirstVisibleRow;
+			}
 
 			_inputRolls.Insert(index, roll);
 			_tasViewPanel.Controls.Add(roll);
@@ -1344,6 +1350,19 @@ namespace BizHawk.Client.EmuHawk
 			{
 				roll.MakeIndexVisible(roll.CurrentCell.RowIndex.Value); // todo: limit scrolling speed
 				SetTasViewRowCount(); // refreshes
+			}
+		}
+
+		private void TasView_RowScroll(InputRoll sender, EventArgs e)
+		{
+			if (Settings.ScrollSync)
+			{
+				foreach (InputRoll roll in _inputRolls)
+				{
+					if (roll == sender) continue;
+					roll.FirstVisibleRow = sender.FirstVisibleRow;
+					roll.Refresh();
+				}
 			}
 		}
 

@@ -77,18 +77,10 @@ namespace BizHawk.Client.EmuHawk
 			AutosaveIntervalNum.Value = _settings.GeneralClientSettings.AutosaveInterval / 1000;
 			BackupOnSaveCheckbox.Checked = _settings.GeneralClientSettings.BackupPerFileSave;
 
-			// misc
-			BindMarkersCheckbox.Checked = _settings.GeneralClientSettings.BindMarkersToInput;
-			AutopauseCheckbox.Checked = _settings.GeneralClientSettings.AutoPause;
-			BranchDoubleClickCheckbox.Checked = _settings.GeneralClientSettings.LoadBranchOnDoubleClick;
-			OldBranchesCheckbox.Checked = _settings.GeneralClientSettings.OldControlSchemeForBranches;
-			IncludeFrameNumberCheckbox.Checked = _settings.GeneralClientSettings.CopyIncludesFrameNo;
+			// input roll
 			AlwaysScrollCheckbox.Checked =  _settings.GeneralClientSettings.FollowCursorAlwaysScroll;
 			EditInvisibleColumnsCheckbox.Checked = _settings.GeneralClientSettings.EditInvisibleColumns;
-			UndoCountNum.Value = _settings.GeneralClientSettings.MaxUndoSteps;
-			RewindNum.Value = _settings.GeneralClientSettings.RewindStep;
-			FastRewindNum.Value = _settings.GeneralClientSettings.RewindStepFast;
-			ScrollSpeedNum.Value = _settings.GeneralClientSettings.ScrollSpeed;
+			ScrollSyncCheckbox.Checked = _settings.GeneralClientSettings.ScrollSync;
 			RadioButton scrollMethodRadio = _settings.GeneralClientSettings.FollowCursorScrollMethod switch
 			{
 				"near" => ScrollToViewRadio,
@@ -98,6 +90,17 @@ namespace BizHawk.Client.EmuHawk
 				_ => ScrollToViewRadio,
 			};
 			scrollMethodRadio.Checked = true;
+
+			// misc
+			BindMarkersCheckbox.Checked = _settings.GeneralClientSettings.BindMarkersToInput;
+			AutopauseCheckbox.Checked = _settings.GeneralClientSettings.AutoPause;
+			BranchDoubleClickCheckbox.Checked = _settings.GeneralClientSettings.LoadBranchOnDoubleClick;
+			OldBranchesCheckbox.Checked = _settings.GeneralClientSettings.OldControlSchemeForBranches;
+			IncludeFrameNumberCheckbox.Checked = _settings.GeneralClientSettings.CopyIncludesFrameNo;
+			UndoCountNum.Value = _settings.GeneralClientSettings.MaxUndoSteps;
+			RewindNum.Value = _settings.GeneralClientSettings.RewindStep;
+			FastRewindNum.Value = _settings.GeneralClientSettings.RewindStepFast;
+			ScrollSpeedNum.Value = _settings.GeneralClientSettings.ScrollSpeed;
 
 			// patterns
 			foreach (var button in _controllerDef.BoolButtons)
@@ -486,17 +489,19 @@ namespace BizHawk.Client.EmuHawk
 			_settings.GeneralClientSettings.AutosaveInterval = (uint)AutosaveIntervalNum.Value * 1000;
 			_settings.GeneralClientSettings.BackupPerFileSave = BackupOnSaveCheckbox.Checked;
 
+			_settings.GeneralClientSettings.FollowCursorAlwaysScroll = AlwaysScrollCheckbox.Checked;
+			_settings.GeneralClientSettings.ScrollSpeed = (int)ScrollSpeedNum.Value;
+			_settings.GeneralClientSettings.ScrollSync = ScrollSyncCheckbox.Checked;
+			_settings.GeneralClientSettings.EditInvisibleColumns = EditInvisibleColumnsCheckbox.Checked;
+
 			_settings.GeneralClientSettings.BindMarkersToInput = BindMarkersCheckbox.Checked;
 			_settings.GeneralClientSettings.AutoPause = AutopauseCheckbox.Checked;
 			_settings.GeneralClientSettings.LoadBranchOnDoubleClick = BranchDoubleClickCheckbox.Checked;
 			_settings.GeneralClientSettings.OldControlSchemeForBranches = OldBranchesCheckbox.Checked;
 			_settings.GeneralClientSettings.CopyIncludesFrameNo = IncludeFrameNumberCheckbox.Checked;
-			_settings.GeneralClientSettings.FollowCursorAlwaysScroll = AlwaysScrollCheckbox.Checked;
-			_settings.GeneralClientSettings.EditInvisibleColumns = EditInvisibleColumnsCheckbox.Checked;
 			_settings.GeneralClientSettings.MaxUndoSteps = (int)UndoCountNum.Value;
 			_settings.GeneralClientSettings.RewindStep = (int)RewindNum.Value;
 			_settings.GeneralClientSettings.RewindStepFast = (int)FastRewindNum.Value;
-			_settings.GeneralClientSettings.ScrollSpeed = (int)ScrollSpeedNum.Value;
 
 			if (ScrollToViewRadio.Checked) _settings.GeneralClientSettings.FollowCursorScrollMethod = "near";
 			else if (ScrollToTopRadio.Checked) _settings.GeneralClientSettings.FollowCursorScrollMethod = "top";

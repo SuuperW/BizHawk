@@ -524,9 +524,9 @@ namespace BizHawk.Client.EmuHawk
 
 		public delegate void ColumnReorderedEventHandler(object sender, ColumnReorderedEventArgs e);
 
-		public delegate void RowScrollEvent(object sender, EventArgs e);
+		public delegate void RowScrollEvent(InputRoll sender, EventArgs e);
 
-		public delegate void ColumnScrollEvent(object sender, EventArgs e);
+		public delegate void ColumnScrollEvent(InputRoll sender, EventArgs e);
 
 		public delegate void CellDroppedEvent(object sender, CellEventArgs e);
 
@@ -1616,16 +1616,14 @@ namespace BizHawk.Client.EmuHawk
 				Refresh();
 			}
 
-#pragma warning disable MA0091 // unorthodox, but I think this is sound --yoshi
 			if (_horizontalOrientation)
 			{
-				ColumnScroll?.Invoke(_hBar, e);
+				ColumnScroll?.Invoke(this, e);
 			}
 			else
 			{
-				RowScroll?.Invoke(_vBar, e);
+				RowScroll?.Invoke(this, e);
 			}
-#pragma warning restore MA0091
 		}
 
 		private void HorizontalBar_ValueChanged(object sender, EventArgs e)
@@ -1635,16 +1633,14 @@ namespace BizHawk.Client.EmuHawk
 				Refresh();
 			}
 
-#pragma warning disable MA0091 // unorthodox, but I think this is sound --yoshi
 			if (_horizontalOrientation)
 			{
-				RowScroll?.Invoke(_hBar, e);
+				RowScroll?.Invoke(this, e);
 			}
 			else
 			{
-				ColumnScroll?.Invoke(_vBar, e);
+				ColumnScroll?.Invoke(this, e);
 			}
-#pragma warning restore MA0091
 		}
 
 		private void ColumnChangedCallback()

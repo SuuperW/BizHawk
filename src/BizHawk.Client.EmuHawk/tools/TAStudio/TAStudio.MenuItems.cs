@@ -974,6 +974,7 @@ namespace BizHawk.Client.EmuHawk
 				}
 			}
 			roll.AllColumns.ColumnsChanged();
+			UpdateInputRollDefinition(roll);
 
 			RefreshDialog();
 		}

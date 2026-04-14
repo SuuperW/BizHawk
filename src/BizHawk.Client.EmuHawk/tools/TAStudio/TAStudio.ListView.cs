@@ -752,7 +752,12 @@ namespace BizHawk.Client.EmuHawk
 			}
 
 			InputRoll roll = (InputRoll)sender;
-			_activeInputRoll = roll;
+			if (roll != _activeInputRoll)
+			{
+				_activeInputRoll.DeselectAll();
+				_activeInputRoll = roll;
+				UpdateActiveMovieInputs();
+			}
 
 			// only on mouse button down, check that the pointed to cell is the correct one (can be wrong due to scroll while playing)
 			roll._programmaticallyChangingRow = true;
@@ -1518,7 +1523,6 @@ namespace BizHawk.Client.EmuHawk
 
 		private void TasView_SelectedIndexChanged(object sender, EventArgs e)
 		{
-			UpdateActiveMovieInputs();
 			SetSplicer();
 		}
 

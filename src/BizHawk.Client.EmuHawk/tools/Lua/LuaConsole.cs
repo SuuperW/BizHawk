@@ -146,7 +146,6 @@ namespace BizHawk.Client.EmuHawk
 					ResetDrawSurfacePadding();
 					ClearFileWatches();
 					LuaImp?.Close();
-					DisplayManager.OSD.ClearGuiText();
 				}
 				else
 				{
@@ -978,7 +977,6 @@ namespace BizHawk.Client.EmuHawk
 				UpdateDialog();
 				DisplayManager.ClearApiHawkSurfaces();
 				DisplayManager.ClearApiHawkTextureCache();
-				DisplayManager.OSD.ClearGuiText();
 				if (!_openedFiles.Any(static lf => !lf.IsSeparator)) ResetDrawSurfacePadding(); // just removed last script, reset padding
 			}
 		}

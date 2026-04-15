@@ -51,6 +51,8 @@ namespace BizHawk.Client.Common
 
 		public SnowyNullVideo SnowyVP { get; private set; }
 
+		public Action/*?*/ OnDraw;
+
 		protected DisplayManagerBase(
 			Config config,
 			IEmulator emulator,

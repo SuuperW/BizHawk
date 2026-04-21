@@ -9,6 +9,18 @@ namespace BizHawk.Client.Common
 	{
 		public IMovieChangeLog ChangeLog { get; set; }
 
+		private Dictionary<string, string> _inputMoveCache = new();
+
+		public override ControllerDefinition ActiveControllerInputs
+		{
+			get => base.ActiveControllerInputs;
+			set
+			{
+				base.ActiveControllerInputs = value;
+				_inputMoveCache.Clear();
+			}
+		}
+
 		// In each editing method we do things in this order:
 		// 1) Any special logic (such as short-circuit)
 		// 2) Begin an undo batch, if needed.
@@ -111,6 +123,26 @@ namespace BizHawk.Client.Common
 			});
 		}
 
+		/// <summary>
+		/// This is used to optimize inserts and deletes when <see cref="ActiveControllerInputs"/> is not null.
+		/// </summary>
+		private void MoveFrame(int readFrom, int writeTo)
+		{
+			string log1 = Log[writeTo]; // always in range
+			string log2 = readFrom >= Log.Count ? "" : Log[readFrom]; // since we just use this string for a cache lookup, it can be blank
+			if (log1 == log2) return;
+			string combined = log1 + log2;
+			if (_inputMoveCache.TryGetValue(combined, out string result))
+			{
+				Log[writeTo] = result;
+			}
+			else
+			{
+				base.PokeFrame(writeTo, GetInputState(readFrom) ?? DefaultValueController);
+				_inputMoveCache[combined] = Log[writeTo];
+			}
+		}
+
 		public void RemoveFrames(int removeStart, int removeUpTo)
 		{
 			// TODO: column limiting
@@ -138,7 +170,9 @@ namespace BizHawk.Client.Common
 			{
 				int count = removeUpTo - removeStart;
 				for (int i = removeStart; i < Log.Count; i++)
-					base.PokeFrame(i, GetInputState(i + count) ?? DefaultValueController);
+				{
+					MoveFrame(readFrom: i + count, writeTo: i);
+				}
 			}
 
 			ChangeLog.AddRemoveFrames(
@@ -171,8 +205,11 @@ namespace BizHawk.Client.Common
 				// add empty frames at the end
 				Log.AddRange(Enumerable.Repeat(Bk2LogEntryGenerator.EmptyEntry(Session.MovieController), count));
 				// shift inputs to future frames
+				_inputMoveCache.Clear();
 				for (int i = Log.Count - 1; i >= frame + count; i--)
-					base.PokeFrame(i, GetInputState(i - count));
+				{
+					MoveFrame(readFrom: i - count, writeTo: i);
+				}
 				// write the new inputs
 				Bk2Controller controller = new(Session.MovieController.Definition, LogKey);
 				for (int i = 0; i < count; i++)
@@ -242,8 +279,11 @@ namespace BizHawk.Client.Common
 				// add empty frames at the end
 				Log.AddRange(Enumerable.Repeat(Bk2LogEntryGenerator.EmptyEntry(Session.MovieController), count));
 				// shift inputs to future frames
+				_inputMoveCache.Clear();
 				for (int i = Log.Count - 1; i >= frame + count; i--)
-					base.PokeFrame(i, GetInputState(i - count));
+				{
+					MoveFrame(readFrom: i - count, writeTo: i);
+				}
 				// clear frames
 				for (int i = frame; i < frame + count; i++)
 					base.PokeFrame(i, DefaultValueController);

@@ -28,7 +28,7 @@ namespace BizHawk.Client.Common
 		}
 
 		private ControllerDefinition/*?*/ _activeControllerInputs = null;
-		public ControllerDefinition/*?*/ ActiveControllerInputs
+		public virtual ControllerDefinition/*?*/ ActiveControllerInputs
 		{
 			get => _activeControllerInputs;
 			set

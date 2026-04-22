@@ -747,9 +747,12 @@ namespace BizHawk.Client.EmuHawk
 					}
 					else if (settings is MovieClientSettings clientSettings)
 					{
-						_movieSettings.AxisPatterns = clientSettings.AxisPatterns;
-						_movieSettings.BoolPatterns = clientSettings.BoolPatterns;
-						_movieSettings.Columns = _inputRolls.Select(static t => t.AllColumns).ToArray();
+						_movieSettings = clientSettings;
+						if (_movieSettings.Columns.Length == 0)
+						{
+							// This will happen if the movie was a build between 2.11 and 2.11.1
+							_movieSettings.Columns = _inputRolls.Select(static t => t.AllColumns).ToArray();
+						}
 						MakeInputRollsFromSettings();
 					}
 					else

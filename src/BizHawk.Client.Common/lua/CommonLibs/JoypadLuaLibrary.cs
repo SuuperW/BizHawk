@@ -44,14 +44,27 @@ namespace BizHawk.Client.Common
 			APIs.Joypad.Set(dict, controller);
 		}
 
-		[LuaMethodExample("joypad.setanalog( { [ \"Tilt X\" ] = -63, [ \"Tilt Y\" ] = 127 } );")]
-		[LuaMethod("setanalog", "Sets the given analog controls to their provided values as autoholds. Set axes to the empty string to clear individual holds.")]
-		public void SetAnalog(LuaTable controls, int? controller = null)
+		[LuaDeprecatedMethod]
+		[Obsolete($"Use {nameof(SetAnalog)}")]
+		[LuaMethod("setanalog", "Use set_analog instead. This function does not work correctly and will be removed in a future version.")]
+		public void SetAnalog_Deprecated(LuaTable controls, int? controller = null)
 		{
 			var dict = new Dictionary<string, int?>();
 			foreach (var (k, v) in controls)
 			{
 				dict[k.ToString()] = long.TryParse(v.ToString(), out var d) ? (int) d : null;
+			}
+			APIs.Joypad.SetAnalog(dict, controller);
+		}
+
+		[LuaMethodExample("joypad.set_analog( { [ \"Tilt X\" ] = -63, [ \"Tilt Y\" ] = 127 } );")]
+		[LuaMethod("set_analog", "Sets the given analog controls to their provided values for the current frame, as if the inputs came from the user. Any analog inputs previously set but missing from the given table will be unset.")]
+		public void SetAnalog(LuaTable controls, int? controller = null)
+		{
+			var dict = new Dictionary<string, int>();
+			foreach (var (k, v) in controls)
+			{
+				dict[k.ToString()] = int.Parse(v.ToString());
 			}
 			APIs.Joypad.SetAnalog(dict, controller);
 		}

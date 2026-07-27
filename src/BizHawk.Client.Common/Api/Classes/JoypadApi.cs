@@ -74,16 +74,40 @@ namespace BizHawk.Client.Common
 			}
 		}
 
+		[Obsolete("Use the overload with non-nullable int instead.")]
 		public void SetAnalog(IReadOnlyDictionary<string, int?> controls, int? controller = null)
 		{
-			foreach (var (k, v) in controls) SetAnalog(k, v, controller);
+			foreach (var (k, v) in controls)
+			{
+				// This obsolete method has diffent behavior than the new overload.
+				try
+				{
+					_inputManager.StickyHoldController.SetAxisHold(controller == null ? k : $"P{controller} {k}", v);
+				}
+				catch
+				{
+					// ignored
+				}
+			}
+		}
+
+		public void SetAnalog(IReadOnlyDictionary<string, int> controls, int? controller = null)
+		{
+			// If a controller is specified, we need to iterate over unique button names. If not, we iterate over
+			// ALL button names with P{controller} prefixes
+			foreach (var axis in _inputManager.ActiveController.ToAxisControlNameList(controller))
+			{
+				SetAnalog(axis, controls.TryGetValue(axis, out var state) ? state : null, controller);
+			}
 		}
 
 		public void SetAnalog(string control, int? value = null, int? controller = null)
 		{
 			try
 			{
-				_inputManager.StickyHoldController.SetAxisHold(controller == null ? control : $"P{controller} {control}", value);
+				var axisToSet = controller == null ? control : $"P{controller} {control}";
+				if (value == null) _inputManager.OverrideAdapter.UnSetAxis(axisToSet);
+				else _inputManager.OverrideAdapter.SetAxis(axisToSet, value.Value);
 			}
 			catch
 			{
